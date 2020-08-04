@@ -23,10 +23,12 @@ module.exports = function calc(gd, trace) {
     if(!trace._isZEmpty) {
         h = trace.z.length;
         w = maxRowLength(trace.z);
+        trace._scaler = makeScaler(trace);
     } else if(!trace._isSourceEmpty) {
         var size = getImageSize(trace.source);
         h = size.height;
         w = size.width;
+        trace._scaler = makeNoopScaler(trace);
     }
 
     var xa = Axes.getFromId(gd, trace.xaxis || 'x');
@@ -43,7 +45,6 @@ module.exports = function calc(gd, trace) {
     if(ya && ya.type === 'log') for(i = 0; i < h; i++) yrange.push(y0 + i * trace.dy);
     trace._extremes[xa._id] = Axes.findExtremes(xa, xrange);
     trace._extremes[ya._id] = Axes.findExtremes(ya, yrange);
-    trace._scaler = makeScaler(trace);
 
     var cd0 = {
         x0: x0,
@@ -92,6 +93,18 @@ function makeScaler(trace) {
             var ck = c[k];
             if(!isNumeric(ck)) return false;
             c[k] = trace._sArray[k](ck);
+        }
+        return c;
+    };
+}
+
+function makeNoopScaler() {
+    return function(pixel) {
+        var n = 4;
+        var c = pixel.slice(0, 4);
+        for(var k = 0; k < n; k++) {
+            var ck = c[k];
+            if(!isNumeric(ck)) return false;
         }
         return c;
     };

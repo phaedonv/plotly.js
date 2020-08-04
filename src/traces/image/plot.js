@@ -12,6 +12,7 @@ var d3 = require('d3');
 var Lib = require('../../lib');
 var xmlnsNamespaces = require('../../constants/xmlns_namespaces');
 var constants = require('./constants');
+var supportedBrowser = true;
 
 module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
     var xa = plotinfo.xaxis;
@@ -21,7 +22,7 @@ module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
         var plotGroup = d3.select(this);
         var cd0 = cd[0];
         var trace = cd0.trace;
-        var fastImage = false;
+        var fastImage = supportedBrowser && !trace._isSourceEmpty;
 
         var z = cd0.z;
         var x0 = cd0.x0;
@@ -87,7 +88,7 @@ module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
         }
 
         // Create a new canvas and draw magnified pixel on it
-        function drawMagnifiedPixelOnCanvas() {
+        function drawMagnifiedPixelOnCanvas(readPixel) {
             var canvas = document.createElement('canvas');
             canvas.width = imageWidth;
             canvas.height = imageHeight;
@@ -103,8 +104,8 @@ module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
                 if(ipx1 === ipx0 || isNaN(ipx1) || isNaN(ipx0)) continue;
                 for(var j = 0; j < cd0.h; j++) {
                     var jpx0 = jpx(j); var jpx1 = jpx(j + 1);
-                    if(jpx1 === jpx0 || isNaN(jpx1) || isNaN(jpx0) || !z[j][i]) continue;
-                    c = trace._scaler(z[j][i]);
+                    if(jpx1 === jpx0 || isNaN(jpx1) || isNaN(jpx0) || !readPixel(i, j)) continue;
+                    c = trace._scaler(readPixel(i, j));
                     if(c) {
                         context.fillStyle = trace.colormodel + '(' + fmt(c).join(',') + ')';
                     } else {
@@ -123,34 +124,14 @@ module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
 
         image3.enter().append('svg:image').attr({
             xmlns: xmlnsNamespaces.svg,
-            preserveAspectRatio: 'none'
+            preserveAspectRatio: 'none',
         });
-
-        var canvas, href;
-        if(!trace._isZEmpty) {
-            canvas = drawMagnifiedPixelOnCanvas();
-            href = canvas.toDataURL('image/png');
-        } else if(!trace._isSourceEmpty) {
-            href = trace.source;
-
-            // Transfer image to a canvas for reading pixel colors in hover routine
-            trace._canvas = trace._canvas || document.createElement('canvas');
-            canvas = trace._canvas;
-            canvas.width = w;
-            canvas.height = h;
-            var context = canvas.getContext('2d');
-            var image = image3.node();
-            image.onload = function() {
-                context.drawImage(image, 0, 0);
-            };
-        }
 
         image3.attr({
             height: imageHeight,
             width: imageWidth,
             x: left,
-            y: top,
-            'xlink:href': href
+            y: top
         });
 
         // TODO: support additional smoothing options
@@ -158,5 +139,42 @@ module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
         // http://phrogz.net/tmp/canvas_image_zoom.html
         image3
           .attr('style', 'image-rendering: optimizeSpeed; image-rendering: -o-crisp-edges; image-rendering: -webkit-optimize-contrast; image-rendering: optimize-contrast; image-rendering: crisp-edges; image-rendering: pixelated;');
+
+        new Promise(function(resolve) {
+            if(!trace._isSourceEmpty) {
+                var tmpCanvas;
+                // Transfer image to a canvas for reading pixel colors in hover routine
+                trace._canvas = trace._canvas || document.createElement('canvas');
+                tmpCanvas = trace._canvas;
+                tmpCanvas.width = w;
+                tmpCanvas.height = h;
+                var context = tmpCanvas.getContext('2d');
+                trace._image = trace._image || new Image();
+                var image = trace._image;
+                image.onload = function() {
+                    context.drawImage(image, 0, 0);
+                    resolve();
+                };
+                image.src = trace.source;
+            } else {
+                resolve();
+            }
+        })
+        .then(function() {
+            var canvas, href;
+            if(!fastImage) {
+                if(!trace._isZEmpty) {
+                    canvas = drawMagnifiedPixelOnCanvas(function(i, j) {return z[j][i];});
+                } else if(!trace._isSourceEmpty) {
+                    canvas = drawMagnifiedPixelOnCanvas(function(i, j) {
+                        return trace._canvas.getContext('2d').getImageData(i, j, 1, 1).data;
+                    });
+                }
+                href = canvas.toDataURL('image/png');
+            } else {
+                href = trace.source;
+            }
+            image3.attr({'xlink:href': href});
+        });
     });
 };
