@@ -12,11 +12,12 @@ var d3 = require('d3');
 var Lib = require('../../lib');
 var xmlnsNamespaces = require('../../constants/xmlns_namespaces');
 var constants = require('./constants');
-var supportsPixelatedImage = !Lib.isIE() && false;
 
 module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
     var xa = plotinfo.xaxis;
     var ya = plotinfo.yaxis;
+
+    var supportsPixelatedImage = !Lib.isIE() && !gd._context._exportedPlot;
 
     Lib.makeTraceGroups(imageLayer, cdimage, 'im').each(function(cd) {
         var plotGroup = d3.select(this);
