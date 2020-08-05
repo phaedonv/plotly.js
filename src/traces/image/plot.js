@@ -150,13 +150,23 @@ module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
                 tmpCanvas.width = w;
                 tmpCanvas.height = h;
                 var context = tmpCanvas.getContext('2d');
-                trace._image = trace._image || new Image();
-                var image = trace._image;
-                image.onload = function() {
-                    context.drawImage(image, 0, 0);
+
+                var image;
+                if(fastImage) {
+                    image = image3.node();
+                    image.onload = function() {
+                        context.drawImage(image, 0, 0);
+                    };
                     resolve();
-                };
-                image.src = trace.source;
+                } else {
+                    trace._image = trace._image || new Image();
+                    image = trace._image;
+                    image.onload = function() {
+                        context.drawImage(image, 0, 0);
+                        resolve();
+                    };
+                    image.src = trace.source;
+                }
             } else {
                 resolve();
             }
