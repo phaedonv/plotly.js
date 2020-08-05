@@ -12,7 +12,7 @@ var d3 = require('d3');
 var Lib = require('../../lib');
 var xmlnsNamespaces = require('../../constants/xmlns_namespaces');
 var constants = require('./constants');
-var supportedBrowser = true;
+var supportsPixelatedImage = !Lib.isIE() && false;
 
 module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
     var xa = plotinfo.xaxis;
@@ -22,7 +22,7 @@ module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
         var plotGroup = d3.select(this);
         var cd0 = cd[0];
         var trace = cd0.trace;
-        var fastImage = supportedBrowser && !trace._isSourceEmpty;
+        var fastImage = supportsPixelatedImage && !trace._isSourceEmpty;
 
         var z = cd0.z;
         var x0 = cd0.x0;
@@ -88,7 +88,7 @@ module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
         }
 
         // Create a new canvas and draw magnified pixel on it
-        function drawMagnifiedPixelOnCanvas(readPixel) {
+        function drawMagnifiedPixelOnCanvas(readPixel, colormodel) {
             var canvas = document.createElement('canvas');
             canvas.width = imageWidth;
             canvas.height = imageHeight;
@@ -97,7 +97,7 @@ module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
             var ipx = function(i) {return Lib.constrain(Math.round(xa.c2p(x0 + i * dx) - left), 0, imageWidth);};
             var jpx = function(j) {return Lib.constrain(Math.round(ya.c2p(y0 + j * dy) - top), 0, imageHeight);};
 
-            var fmt = constants.colormodel[trace.colormodel].fmt;
+            var fmt = constants.colormodel[colormodel].fmt;
             var c;
             for(i = 0; i < cd0.w; i++) {
                 var ipx0 = ipx(i); var ipx1 = ipx(i + 1);
@@ -107,7 +107,7 @@ module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
                     if(jpx1 === jpx0 || isNaN(jpx1) || isNaN(jpx0) || !readPixel(i, j)) continue;
                     c = trace._scaler(readPixel(i, j));
                     if(c) {
-                        context.fillStyle = trace.colormodel + '(' + fmt(c).join(',') + ')';
+                        context.fillStyle = colormodel + '(' + fmt(c).join(',') + ')';
                     } else {
                         // Return a transparent pixel
                         context.fillStyle = 'rgba(0,0,0,0)';
@@ -138,7 +138,7 @@ module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
         // https://developer.mozilla.org/en-US/docs/Web/CSS/image-rendering
         // http://phrogz.net/tmp/canvas_image_zoom.html
         image3
-          .attr('style', 'image-rendering: optimizeSpeed; image-rendering: -o-crisp-edges; image-rendering: -webkit-optimize-contrast; image-rendering: optimize-contrast; image-rendering: crisp-edges; image-rendering: pixelated;');
+          .attr('style', 'image-rendering: optimizeSpeed; image-rendering: -moz-crisp-edges; image-rendering: -o-crisp-edges; image-rendering: -webkit-optimize-contrast; image-rendering: optimize-contrast; image-rendering: crisp-edges; image-rendering: pixelated;');
 
         new Promise(function(resolve) {
             if(!trace._isSourceEmpty) {
@@ -164,11 +164,11 @@ module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
             var canvas, href;
             if(!fastImage) {
                 if(!trace._isZEmpty) {
-                    canvas = drawMagnifiedPixelOnCanvas(function(i, j) {return z[j][i];});
+                    canvas = drawMagnifiedPixelOnCanvas(function(i, j) {return z[j][i];}, trace.colormodel);
                 } else if(!trace._isSourceEmpty) {
                     canvas = drawMagnifiedPixelOnCanvas(function(i, j) {
                         return trace._canvas.getContext('2d').getImageData(i, j, 1, 1).data;
-                    });
+                    }, 'rgba');
                 }
                 href = canvas.toDataURL('image/png');
             } else {
