@@ -847,7 +847,11 @@ module.exports = function setConvert(ax, fullLayout) {
             }
         }
 
-        return alignPeriod(trace, axLetter, arrayOut);
+        if(axType === 'date') {
+            arrayOut = alignPeriod(trace, axLetter, arrayOut);
+        }
+
+        return arrayOut;
     };
 
     ax.isValidRange = function(range) {
