@@ -13,6 +13,7 @@ var customAssertions = require('../assets/custom_assertions');
 var assertHoverLabelContent = customAssertions.assertHoverLabelContent;
 var supplyAllDefaults = require('../assets/supply_defaults');
 var Fx = require('@src/components/fx');
+var drag = require('../assets/drag');
 
 describe('image supplyDefaults', function() {
     'use strict';
@@ -381,6 +382,14 @@ describe('image plot', function() {
         Plotly.newPlot(gd, mockCopy)
         .then(function(gd) {
             expect(gd.calcdata[0][0].trace._fastImage).toBe(false);
+            return drag({pos0: [350, 250], dpos: [100, 0]});
+        })
+        .then(function() {
+            return drag({pos0: [350, 250], dpos: [100, 0]});
+        })
+        .then(function() {
+            var imgs = document.querySelectorAll('image');
+            expect(imgs.length).toBe(2);
             // Clear spy
             spyObj.and.callThrough();
         })

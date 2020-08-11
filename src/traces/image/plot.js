@@ -121,6 +121,15 @@ module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
             return canvas;
         }
 
+        function sizeImage(image) {
+            image.attr({
+                height: imageHeight,
+                width: imageWidth,
+                x: left,
+                y: top
+            });
+        }
+
         var image3 = plotGroup.selectAll('image')
             .data(cd);
 
@@ -129,12 +138,22 @@ module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
             preserveAspectRatio: 'none',
         });
 
-        image3.attr({
-            height: imageHeight,
-            width: imageWidth,
-            x: left,
-            y: top
+        if(fastImage) sizeImage(image3);
+        image3.exit().remove();
+
+
+        var hiddenImage = plotGroup.selectAll('image.hidden')
+            .data((!trace._isSourceEmpty && !fastImage) ? cd : []);
+        hiddenImage.classed('hidden', true);
+
+        hiddenImage.enter().append('image').attr({
+            // xmlns: xmlnsNamespaces.svg,
+            preserveAspectRatio: 'none'
         });
+
+        sizeImage(hiddenImage)
+        hiddenImage.attr({display: 'none'});
+        hiddenImage.exit().remove();
 
         // TODO: support additional smoothing options
         // https://developer.mozilla.org/en-US/docs/Web/CSS/image-rendering
@@ -162,13 +181,12 @@ module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
                     };
                     resolve();
                 } else {
-                    trace._image = trace._image || new Image();
-                    image = trace._image;
+                    image = hiddenImage.node();
                     image.onload = function() {
                         context.drawImage(image, 0, 0);
                         resolve();
                     };
-                    image.src = trace.source;
+                    hiddenImage.attr({'href': trace.source});
                 }
             } else {
                 resolve();
@@ -196,6 +214,7 @@ module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
             } else {
                 href = trace.source;
             }
+            sizeImage(image3);
             image3.attr({'xlink:href': href});
         });
     });
