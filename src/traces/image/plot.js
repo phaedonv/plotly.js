@@ -139,8 +139,10 @@ module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
         // TODO: support additional smoothing options
         // https://developer.mozilla.org/en-US/docs/Web/CSS/image-rendering
         // http://phrogz.net/tmp/canvas_image_zoom.html
-        image3
-          .attr('style', 'image-rendering: optimizeSpeed; image-rendering: -moz-crisp-edges; image-rendering: -o-crisp-edges; image-rendering: -webkit-optimize-contrast; image-rendering: optimize-contrast; image-rendering: crisp-edges; image-rendering: pixelated;');
+        if(fastImage) {
+            plotGroup.selectAll('image')
+                .attr('style', 'image-rendering: optimizeSpeed; image-rendering: -moz-crisp-edges; image-rendering: -o-crisp-edges; image-rendering: -webkit-optimize-contrast; image-rendering: optimize-contrast; image-rendering: crisp-edges; image-rendering: pixelated;');
+        }
 
         new Promise(function(resolve) {
             if(!trace._isSourceEmpty) {
