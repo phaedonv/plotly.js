@@ -376,11 +376,13 @@ describe('image plot', function() {
     it('does not use fast rendering when browser is not compatible', function(done) {
         var mock = require('@mocks/image_labuda_droplets_source.json');
         var mockCopy = Lib.extendDeep({}, mock);
-        spyOnProperty(window.navigator, 'userAgent').and.returnValue('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15');
+        var spyObj = spyOnProperty(window.navigator, 'userAgent').and.returnValue('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15');
 
         Plotly.newPlot(gd, mockCopy)
         .then(function(gd) {
             expect(gd.calcdata[0][0].trace._fastImage).toBe(false);
+            // Clear spy
+            spyObj.and.callThrough();
         })
         .catch(failTest)
         .then(done);
