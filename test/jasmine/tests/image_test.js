@@ -57,6 +57,21 @@ describe('image supplyDefaults', function() {
         expect(traceOut.visible).toBe(true);
     });
 
+    it('should set visible to false when source is empty', function() {
+        traceIn = {
+            source: null
+        };
+        supplyDefaults(traceIn, traceOut);
+        expect(traceOut.visible).toBe(false);
+
+        traceIn = {
+            type: 'image',
+            source: 'base64'
+        };
+        traceOut = Plots.supplyTraceDefaults(traceIn, {type: 'image'}, 0, layout);
+        expect(traceOut.visible).toBe(true);
+    });
+
     it('should set proper zmin/zmax depending on colormodel', function() {
         var tests = [
           ['rgb', [0, 0, 0], [255, 255, 255]],
@@ -342,6 +357,30 @@ describe('image plot', function() {
         })
         .then(function() {
             expect(getIndices()).toEqual([0, 1]);
+        })
+        .catch(failTest)
+        .then(done);
+    });
+
+    it('uses fast rendering when source is defined', function(done) {
+        var mock = require('@mocks/image_labuda_droplets_source.json');
+        var mockCopy = Lib.extendDeep({}, mock);
+        Plotly.newPlot(gd, mockCopy)
+        .then(function(gd) {
+            expect(gd.calcdata[0][0].trace._fastImage).toBeTruthy();
+        })
+        .catch(failTest)
+        .then(done);
+    });
+
+    it('does not use fast rendering when browser is not compatible', function(done) {
+        var mock = require('@mocks/image_labuda_droplets_source.json');
+        var mockCopy = Lib.extendDeep({}, mock);
+        spyOnProperty(window.navigator, 'userAgent').and.returnValue('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15');
+
+        Plotly.newPlot(gd, mockCopy)
+        .then(function(gd) {
+            expect(gd.calcdata[0][0].trace._fastImage).toBe(false);
         })
         .catch(failTest)
         .then(done);

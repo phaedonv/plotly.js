@@ -17,13 +17,14 @@ module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
     var xa = plotinfo.xaxis;
     var ya = plotinfo.yaxis;
 
-    var supportsPixelatedImage = !Lib.isIE() && !gd._context._exportedPlot;
+    var supportsPixelatedImage = !Lib.isSafari() && !gd._context._exportedPlot;
 
     Lib.makeTraceGroups(imageLayer, cdimage, 'im').each(function(cd) {
         var plotGroup = d3.select(this);
         var cd0 = cd[0];
         var trace = cd0.trace;
         var fastImage = supportsPixelatedImage && !trace._isSourceEmpty;
+        trace._fastImage = fastImage;
 
         var z = cd0.z;
         var x0 = cd0.x0;
