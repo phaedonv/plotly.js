@@ -178,8 +178,16 @@ module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
                 if(!trace._isZEmpty) {
                     canvas = drawMagnifiedPixelOnCanvas(function(i, j) {return z[j][i];}, trace.colormodel);
                 } else if(!trace._isSourceEmpty) {
+                    var context = trace._canvas.getContext('2d');
+                    var data = context.getImageData(0, 0, w, h).data;
                     canvas = drawMagnifiedPixelOnCanvas(function(i, j) {
-                        return trace._canvas.getContext('2d').getImageData(i, j, 1, 1).data;
+                        var index = 4 * (j * w + i);
+                        return [
+                            data[index + 0],
+                            data[index + 1],
+                            data[index + 2],
+                            data[index + 3]
+                        ];
                     }, 'rgba');
                 }
                 href = canvas.toDataURL('image/png');
