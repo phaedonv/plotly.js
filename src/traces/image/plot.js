@@ -151,7 +151,7 @@ module.exports = function plot(gd, plotinfo, cdimage, imageLayer) {
             preserveAspectRatio: 'none'
         });
 
-        sizeImage(hiddenImage)
+        sizeImage(hiddenImage);
         hiddenImage.attr({display: 'none'});
         hiddenImage.exit().remove();
 
